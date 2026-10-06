@@ -1,0 +1,31 @@
+name: "00 - Azure login test (practice)"
+
+on:
+  workflow_dispatch:          # adds the "Run workflow" button
+
+jobs:
+  login-test:
+    runs-on: ubuntu-latest    # GitHub lends a fresh Linux computer
+    steps:
+      - name: Show who started this run
+        run: echo "Run started by ${{ github.actor }} in repo ${{ github.repository }}"
+
+      - name: "Pretend Azure login (real one = azure/login)"
+        env:
+          CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+        run: |
+          if [ -z "$CLIENT_ID" ] || [ -z "$CLIENT_SECRET" ]; then
+            echo "❌ Login failed: service principal values missing in Settings → Secrets and variables"
+            exit 1
+          fi
+          echo "Client ID (not secret):       $CLIENT_ID"
+          echo "Tenant ID (not secret):       $TENANT_ID"
+          echo "Subscription ID (not secret): $SUBSCRIPTION_ID"
+          echo "Client secret:                $CLIENT_SECRET   <- GitHub hides this"
+          echo "✅ Pretend login successful as the service principal"
+
+      - name: "Pretend 'az group show' (prove access)"
+        run: echo "✅ Resource group rg-aiunit-dev found (pretend)"
