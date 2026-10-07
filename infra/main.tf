@@ -16,7 +16,7 @@ provider "azurerm" {
 variable "location" {
   type        = string
   description = "Azure region"
-  default     = "westeurope"
+  default     = "northeurope"
 }
 
 resource "azurerm_resource_group" "dev" {
