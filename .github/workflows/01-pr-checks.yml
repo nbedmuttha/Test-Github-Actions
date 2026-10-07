@@ -1,0 +1,64 @@
+name: "01 - PR checks"
+
+on:
+  pull_request:              # runs by itself on every pull request into main
+    branches: [main]
+  workflow_dispatch:         # also lets you run it by hand
+
+permissions:
+  contents: read
+  pull-requests: write       # lets gitleaks comment on the pull request
+
+jobs:
+  terraform-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the repo files
+        uses: actions/checkout@v4
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Format check (is the file neatly written?)
+        run: terraform fmt -check -recursive
+
+      - name: Validity check (is the file correct Terraform?)
+        working-directory: infra
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+      - name: Install tflint
+        uses: terraform-linters/setup-tflint@v4
+
+      - name: Lint (find mistakes)
+        working-directory: infra
+        run: |
+          tflint --init
+          tflint
+
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the repo files
+        uses: actions/checkout@v4
+
+      - name: Security scan (risky settings)
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: infra
+          framework: terraform
+          check: CKV_AZURE_137,CKV_AZURE_139   # 137 = registry admin password on, 139 = registry open to internet
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the repo files (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Secret scan (pasted passwords)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
